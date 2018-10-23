@@ -41,8 +41,12 @@ def handler2(event, context):
   return records
 
 def handler(event, context):
+  print(context)
   print(event)
-  method = event["httpMethod"]
+  try:
+    method = event["httpMethod"]
+  except:
+    method = event["context"]["http-method"]
 
   handlers = {
     "GET": handler_get,
@@ -51,7 +55,10 @@ def handler(event, context):
 
   def getQuery(method):
     if method == "GET":
-      return event["queryStringParameters"]
+      try:
+        return event["queryStringParameters"]
+      except:
+        return event["params"]["querystring"]
     else:
       return json.loads(event["body"])
 
@@ -96,6 +103,7 @@ def handler_get(event, context, query, url):
         break
 
   isBase64Encoded = False
+  gzipped = False
   if gzipped:
     try:
       return_body = return_body.encode()
@@ -221,6 +229,7 @@ def handler_post(event, context, query, url):
   headersPost.update(query["headers"])
   jsonPost = query["body"]
   print(headersPost)
+  print(jsonPost)
   res = requests.post(url, headers=headersPost, json=jsonPost)#, auth=(username,password)
 
   return_headers = { ACCESS_CONTROL_ALLOW_ORIGIN: ALL, "Access-Control-Expose-Headers": "x-csrf-token,www-authenticate" }
