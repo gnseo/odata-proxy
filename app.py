@@ -418,7 +418,12 @@ def sendMessageToClient(event, ret_result):
   apiClient = boto3.client("apigatewaymanagementapi",
                            endpoint_url="https://{0}/{1}".format(domainName, stage))
   ret_result.update(
-      {"action": event["action"], "toDo": event.get("toDo", None)})
+      {
+          "action": event.get("action", None),
+          "subAction": event.get("subAction", None),
+          "processID": event.get("processID", None),
+          "toDo": event.get("toDo", None)
+      })
   dataToSend = base64.b64encode(json.dumps(ret_result).encode())
   print(sys.getsizeof(dataToSend))
   print(len(dataToSend))
@@ -427,11 +432,25 @@ def sendMessageToClient(event, ret_result):
   for idx, d in enumerate(dataSplitted):
     lineNumber = idx + 1
     if totalLine == 1:
-      finalData = json.dumps({"action": event["action"], "toDo": event.get(
-          "toDo", None), "body": d.decode()})
+      finalData = json.dumps({
+          "action": event.get("action", None),
+          "subAction": event.get("subAction", None),
+          "processID": event.get("processID", None),
+          "toDo": event.get("toDo", None),
+          "body": d.decode()
+      })
     else:
-      finalData = json.dumps({"action": event["action"], "toDo": event.get(
-          "toDo", None), "splitted": {"total": totalLine, "seq": lineNumber, "body": d.decode()}})
+      finalData = json.dumps({
+          "action": event.get("action", None),
+          "subAction": event.get("subAction", None),
+          "processID": event.get("processID", None),
+          "toDo": event.get("toDo", None),
+          "splitted": {
+              "total": totalLine,
+              "seq": lineNumber,
+              "body": d.decode()
+          }
+      })
     try:
       apiClient.post_to_connection(
           ConnectionId=connectionId, Data=finalData)
