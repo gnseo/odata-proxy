@@ -5,10 +5,11 @@ import json
 import os
 import re
 import ssl
-import sys
+import sys, logging
 import tempfile
 import uuid
 from urllib.parse import quote
+import traceback
 
 import boto3
 import botocore
@@ -23,6 +24,10 @@ except NameError:
 except:
   print("Unexpected error:", sys.exc_info()[0])
 
+
+logging.basicConfig()
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 AUTH_BASE64 = "auth_base64"
 URL = "url"
@@ -51,7 +56,7 @@ def handler2(event, context):
   records = []
   rawJson = response['Payload'].read().decode('utf-8')
   getJson = json.loads(rawJson)
-  print(getJson)
+  # print(getJson)
   records.append(getJson)
 
   return records
@@ -127,14 +132,11 @@ def pfx_to_pem(pfx_path, pfx_password):
     f_pem = open(t_pem.name, 'wb')
     pfx = open(pfx_path, 'rb').read()
     p12 = OpenSSL.crypto.load_pkcs12(pfx, pfx_password)
-    # print(p12)
     f_pem.write(OpenSSL.crypto.dump_privatekey(
         OpenSSL.crypto.FILETYPE_PEM, p12.get_privatekey()))
     f_pem.write(OpenSSL.crypto.dump_certificate(
         OpenSSL.crypto.FILETYPE_PEM, p12.get_certificate()))
     ca = p12.get_ca_certificates()
-    # print(f_pem)
-    # print(ca)
     if ca is not None:
       for cert in ca:
         f_pem.write(OpenSSL.crypto.dump_certificate(
@@ -156,12 +158,10 @@ def handler_get(event, context, query, url):
   except TypeError:
     h = query["headers"]
   useSSL = False
-  try:
-    print(h["pkcs12"])
-    useSSL = True
-  except KeyError:
-    pass
 
+  if h.get("pkcs12",None) is not None:
+    useSSL = True
+  
   if useSSL == True:
     pkcs12_path = get_file_from_s3("cert--bsg.support", "my341099.p12")
 
@@ -170,9 +170,9 @@ def handler_get(event, context, query, url):
   else:
     res = requests.get(url, headers=h)
 
-  print(res.headers)
-  print(res.text)
-  print(res.cookies)
+  # print(res.headers)
+  # print(res.text)
+  # print(res.cookies)
   # try:
 
   return_headers = {ACCESS_CONTROL_ALLOW_ORIGIN: ALL,
@@ -215,7 +215,7 @@ def handler_get(event, context, query, url):
 
     isBase64Encoded = True
 
-  print(return_body)
+  # print(return_body)
 
   #token = res.headers["x-csrf-token"]
   ## cookie = res.headers["set-cookie"].replace("path=/; secure; HttpOnly","")
@@ -223,7 +223,6 @@ def handler_get(event, context, query, url):
   #cookie = "".join(re.findall('[^ .]+\; ',set_cookie))
   # for c in re.finditer('[^ .]+\; ',set_cookie):
   ##  cookie += c
-  # print(cookie)
 
   return {
       'statusCode': res.status_code,
@@ -314,8 +313,7 @@ def handler_post(event, context, query, url):
     #        })
     #  }
 
-  print("cookie and token:")
-  #print(cookie, token)
+  # print("cookie and token:")
 
   headersPost = {
       "accept": "application/json",
@@ -326,8 +324,6 @@ def handler_post(event, context, query, url):
   }
   headersPost.update(query["headers"])
   jsonPost = query["body"]
-  print(headersPost)
-  print(jsonPost)
   # , auth=(username,password)
   return_headers = {ACCESS_CONTROL_ALLOW_ORIGIN: ALL,
                     "Access-Control-Expose-Headers": "x-csrf-token,www-authenticate"}
@@ -346,7 +342,6 @@ def handler_post(event, context, query, url):
     return ret_result
 
   return_headers.update(res.headers)
-  print(res.headers)
 
   gzipped = False
   for key, value in return_headers.items():
@@ -380,7 +375,6 @@ def handler_post(event, context, query, url):
 
     isBase64Encoded = True
 
-  # print(return_body)
   ret_result = {
       'statusCode': 200,
       'headers': return_headers,
@@ -391,11 +385,7 @@ def handler_post(event, context, query, url):
   return ret_result
 
   result = res.json()
-  print(result)
   result = result["d"]["results"]
-
-  print(result["TaskID"])
-  print(result["Message"])
 
   return {
       'statusCode': 200,
@@ -425,8 +415,8 @@ def sendMessageToClient(event, ret_result):
           "toDo": event.get("toDo", None)
       })
   dataToSend = base64.b64encode(json.dumps(ret_result).encode())
-  print(sys.getsizeof(dataToSend))
-  print(len(dataToSend))
+  # print(sys.getsizeof(dataToSend))
+  # print(len(dataToSend))
   dataSplitted = split_len(dataToSend, 1024 * 10)
   totalLine = len(dataSplitted)
   for idx, d in enumerate(dataSplitted):
@@ -455,5 +445,4 @@ def sendMessageToClient(event, ret_result):
       apiClient.post_to_connection(
           ConnectionId=connectionId, Data=finalData)
     except botocore.exceptions.ClientError as clientError:
-      print(clientError)
       resBody = {"statusCode": clientError.response['Error']['Code']}
