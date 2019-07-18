@@ -1,7 +1,3 @@
-7z
-__pycache__
 *.log
 *.pyc
 */*dist-info/*
-latest.zip
-archive.bat

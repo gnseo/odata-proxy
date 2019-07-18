@@ -2,5 +2,9 @@
 __pycache__
 latest.zip
 archive.bat
+archive.sh
 .git
 .git*
+zip-ignore
+.gitignore
+.gitattributes
