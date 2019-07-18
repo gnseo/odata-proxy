@@ -75,12 +75,17 @@ def handler(event, context):
             else:
                 return event["body-json"]
 
-    query = getQuery(method)
+    if version == "20190625":
+        query = {}
+    else:
+        query = getQuery(method)
 
-    def getURL(query):
-        return query[URL]
+    if version == "20190625":
+        url = event.get(URL)
+    else:
+        url = query[URL]
 
-    ret_result = handlers[method](event, context, query, getURL(query), method)
+    ret_result = handlers[method](event, context, query, url, method)
     if "action" in event:
         return sendMessageToClient(event, ret_result)
     else:
@@ -308,7 +313,7 @@ def sendQuery(url, httpMethod, headers=None, jsonBody=None, cert=None, return_he
 
 
 def handler_post(event, context, query, url, httpMethod):
-
+    global version
     # if "get_token" in query:
     #     token_json = handler_get(event, context, query, url, httpMethod)
 
@@ -365,8 +370,12 @@ def handler_post(event, context, query, url, httpMethod):
         # "cookie":cookie,
         # "authorization":"Basic "+auth_base64
     }
-    headersPost.update(query["headers"])
-    jsonPost = query["body"]
+    if version == "20190625":
+        headersPost.update(event.get("headers"))
+        jsonPost = event.get("body")
+    else:
+        headersPost.update(query.get("headers"))
+        jsonPost = query.get("body")
     # , auth=(username,password)
     return_headers = {ACCESS_CONTROL_ALLOW_ORIGIN: ALL,
                       "Access-Control-Expose-Headers": "x-csrf-token,www-authenticate"}
