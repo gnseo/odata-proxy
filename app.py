@@ -298,6 +298,7 @@ def sendQuery(url, httpMethod, headers=None, jsonBody=None, cert=None, return_he
             print(res.text)
             error_text = res.text
             error_status_code = res.status_code
+            return_headers.update(res.headers)
 
         ret_result = {
             'statusCode': error_status_code,
