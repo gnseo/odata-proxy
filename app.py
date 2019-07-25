@@ -71,14 +71,14 @@ def handler(event, context):
                 return event["params"]["querystring"]
         else:
             if "body" in event:
-                return json.loads(event["body"])
+                if version == "20190625":
+                    return event.get("body")
+                else:
+                    return json.loads(event["body"])
             else:
                 return event["body-json"]
 
-    if version == "20190625":
-        query = {}
-    else:
-        query = getQuery(method)
+    query = getQuery(method)
 
     if version == "20190625":
         url = event.get(URL)
