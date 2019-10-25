@@ -61,14 +61,18 @@ def handler(event, context):
         "PATCH": handler_post
     }
 
+    print(method)
+
     def getQuery(method):
         if method == "GET":
+            print(version)
             if version == "20190625":
                 return event
-            try:
-                return event["queryStringParameters"]
-            except:
-                return event["params"]["querystring"]
+            else:
+                try:
+                    return event["queryStringParameters"]
+                except:
+                    return event["params"]["querystring"]
         else:
             if "body" in event:
                 if version == "20190625":
@@ -85,6 +89,7 @@ def handler(event, context):
     else:
         url = query[URL]
 
+    print(query)
     ret_result = handlers[method](event, context, query, url, method)
     if "action" in event:
         return sendMessageToClient(event, ret_result)
