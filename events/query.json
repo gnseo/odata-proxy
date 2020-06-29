@@ -1,0 +1,24 @@
+{
+  "version": "20190625",
+  "subAction": "fetchProductionOrderDataProcess",
+  "description": "",
+  "httpMethod": "GET",
+  "headers": {
+    "bsg-support-token": "396a6a70-9faf-11ea-a738-e500fab1b9fc",
+    "bsg-support-session": "396a6a71-9faf-11ea-a738-e500fab1b9fc",
+    "bsg-support-userID": "mx2",
+    "bsg-support-systemExternalID": "my349266",
+    "bsg-support-partnerID": "7sunhuyb8o",
+    "bsg-support-systemID": "s8gxs5masx",
+    "requestTimestamp": "1593393399671",
+    "href": "https://bsg.support/measure",
+    "authorization": "Basic bXgyOk14MjEyMzQ1Njc4",
+    "accept": "application/json"
+  },
+  "url": "https://my349266.sapbydesign.com/sap/byd/odata/cust/v1/bsg_productionorder/ProductionOrderCollection?$expand=ProductionLot/ProductionLotMaterialInput/ProductionLotMaterialInputLogisticsArea,ProductionLot/ReportingPoint,ProductionLot/ConfirmationGroup/ProductionTask,ProductionLot/ProductionLotMaterialOutput/ProdLotMatOutputLogisticsArea/ProdLotMatOutputLogisticsAreaSite,ProductionLot/ProductionLotMaterialOutput,ProductionLot,ProductionLot/ProductionLotMaterialInput,ProductionOrderMainProductOutput,ProductionLot/ReportingPoint&$filter=ID%20eq%20%2715824%27&sap-language=ko&$format=json&$inlinecount=allpages",
+  "processID": "fetchProductionOrderDataProcess",
+  "domainName": "ws.bsg.support",
+  "stage": "prod",
+  "connectionId": "O3cWpepkIE0CIYw=",
+  "origin": "https://bsg.support"
+}

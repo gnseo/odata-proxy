@@ -50,8 +50,7 @@ def handler(event, context):
     except:
         method = event["context"]["http-method"]
 
-    if "action" in event:
-        version = event.get("version")
+    version = event.get("version")
 
     handlers = {
         "GET": handler_get,
@@ -86,7 +85,7 @@ def handler(event, context):
         url = query[URL]
 
     ret_result = handlers[method](event, context, query, url, method)
-    if "action" in event:
+    if "connectionId" in event:
         return sendMessageToClient(event, ret_result)
     else:
         return ret_result
