@@ -1,0 +1,1 @@
+docker run -it --rm -v ${PWD}:/python -w /python lambci/lambda:build-python3.6 bash
