@@ -151,6 +151,10 @@ def handler_get(event, context, query, url, httpMethod):
         h = json.loads(query["headers"])
     except TypeError:
         h = query["headers"]
+    except KeyError:
+        # h =
+        print(query)
+        pass 
     useSSL = False
 
     pkcs12 = h.get("pkcs12", None)
