@@ -1,5 +1,6 @@
 {
   "version": "20190625",
+  "action": "requestodata",
   "subAction": "fetchProductionOrderDataProcess",
   "description": "",
   "httpMethod": "GET",
@@ -19,6 +20,5 @@
   "processID": "fetchProductionOrderDataProcess",
   "domainName": "ws.bsg.support",
   "stage": "prod",
-  "connectionId": "O3cWpepkIE0CIYw=",
   "origin": "https://bsg.support"
 }
