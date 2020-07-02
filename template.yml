@@ -17,7 +17,8 @@ Resources:
       CodeUri: ./
       Handler: app.handler
       Runtime: python3.6
-      Layers: 
+      Layers:
+        - arn:aws:lambda:ap-northeast-2:341701383528:layer:boto3-1_9_71:2
         - arn:aws:lambda:ap-northeast-2:341701383528:layer:odata-proxy:2
 
 Outputs:
