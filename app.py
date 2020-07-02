@@ -11,6 +11,7 @@ import tempfile
 import uuid
 from urllib.parse import quote
 import traceback
+import hashlib
 
 import boto3
 import botocore
@@ -25,6 +26,8 @@ except NameError:
 except:
     print("Unexpected error:", sys.exc_info()[0])
 
+
+s3 = boto3.resource('s3')
 
 logging.basicConfig()
 log = logging.getLogger()
@@ -89,6 +92,29 @@ def handler(event, context):
     if "connectionId" in event:
         return sendMessageToClient(event, ret_result)
     else:
+        try:
+            bucket = s3.Bucket("cert-lock-bsg.support")
+            headers = query.get("headers", {})
+            data_source = query.get("dataSource")
+            entity_set = query.get("entitySet")
+            partner_id = headers.get("bsg-support-partnerID")
+            system_id = headers.get("bsg-support-systemID")
+            results = json.loads(ret_result.get("body"))
+            hash_object = hashlib.sha256()
+            hash_object.update(json.dumps(results).encode("utf-8"))
+            hash_key = hash_object.hexdigest()
+            splitter = "/"
+            keyParts = ["db-data",partner_id, system_id, data_source, entity_set, hash_key]
+            bucket.put_object(
+              Key = splitter.join(list(filter(lambda x: x is not None, keyParts))),
+              Body = json.dumps(results),
+              ContentType = "application/json"
+            )
+        except:
+            print("Unexpected error:", sys.exc_info())
+            str_msg = traceback.format_exc().splitlines()
+            print(str_msg)
+            pass
         return ret_result
 
 
@@ -97,8 +123,6 @@ def get_file_from_s3(bucket_name, file_name):
     # KEY = 'Y2TSL8HJY_ManageMashupTokenIn.wsdl' # replace with your object key
 
     # client_s3 = boto3.client("s3")
-
-    s3 = boto3.resource('s3')
 
     local_wsdl_location = '/tmp/{}'.format(file_name)
 
