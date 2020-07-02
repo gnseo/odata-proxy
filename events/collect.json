@@ -1,0 +1,16 @@
+{
+  "version": "20190625",
+  "action": "requestodata",
+  "subAction": "fetchProductionOrderDataProcess",
+  "description": "",
+  "dataSource": "BSG_MATERIAL",
+  "entitySet": "MATERIAL",
+  "httpMethod": "GET",
+  "headers": {
+    "bsg-support-userID": "admin",
+    "bsg-support-partnerID": "7sunhuyb8o",
+    "bsg-support-systemID": "s8gxs5masx",
+    "authorization": "Basic YWRtaW46V2VsY29tZTEyMw=="
+  },
+  "url": "https://my349266.sapbydesign.com/sap/byd/odata/cust/v1/bsg_material/MaterialCollection?$filter=InternalID eq '208553'&$format=json"
+}
