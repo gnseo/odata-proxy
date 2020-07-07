@@ -2,6 +2,7 @@ import base64
 import contextlib
 import gzip
 import json
+import math
 import os
 import re
 import ssl
@@ -18,6 +19,15 @@ import botocore
 
 sys.path.insert(0, './pip')
 
+def tryit(func, elseValue = None, *args, **kwargs):
+  try:
+    return func(*args, **kwargs)
+  except:
+    if elseValue is not None:
+      return elseValue
+    else:
+      return None
+
 try:
     print(OpenSSL.crypto)
 except NameError:
@@ -28,6 +38,7 @@ except:
 
 
 s3 = boto3.resource('s3')
+aws_lambda = boto3.client('lambda')
 
 logging.basicConfig()
 log = logging.getLogger()
@@ -46,7 +57,6 @@ version = None
 def handler(event, context):
     global version
 
-    # print(context)
     print(event)
     try:
         method = event["httpMethod"]
@@ -97,6 +107,9 @@ def handler(event, context):
             headers = query.get("headers", {})
             data_source = query.get("dataSource")
             entity_set = query.get("entitySet")
+            if data_source is None:
+              raise Exception("No data source passed on event")
+            
             partner_id = headers.get("bsg-support-partnerID")
             system_id = headers.get("bsg-support-systemID")
             results = json.loads(ret_result.get("body"))
@@ -110,6 +123,49 @@ def handler(event, context):
               Body = json.dumps(results),
               ContentType = "application/json"
             )
+
+            fetch_all = query.get("fetchAll")
+            if fetch_all != True:
+              raise Exception("Do not fetch more since event.fetchAll is not true")
+
+            query_top = re.compile(r'\$top=\d{1,}').findall(url)
+            desired_count = tryit(lambda : int(query_top[0].replace("$top=", "")), 0)
+
+            this_count = tryit(lambda : len(results.get("d", {}).get("results", [])), 0)
+            total_count = int(results.get("d", {}).get("__count", "0"))
+            
+            increase_count = this_count
+            if desired_count > 0:
+              increase_count = desired_count
+            
+            acc_count = 0
+            
+            loop_number = math.floor(total_count / this_count)
+            
+            print(url)
+            print(total_count)
+            print(this_count)
+            print(loop_number)
+
+            if loop_number >= 1:
+              if total_count % this_count > 0:
+                loop_number = loop_number + 1
+
+              for index in range(loop_number):
+                acc_count = acc_count + increase_count
+                without_skip = re.sub(r'\$skip=\d{0,}&{0,1}', '', url)
+                with_skip = without_skip.replace('?', '?$skip={0}&'.format(acc_count), 1)
+
+                print(with_skip)
+                new_event = dict()
+                new_event.update(event)
+                new_event.pop("fetchAll")
+                new_event.update({"url": with_skip, "noMoreQuery": True})
+                aws_lambda.invoke(
+                  InvocationType='Event', 
+                  FunctionName='{0}:{1}'.format(context.function_name, context.function_version),
+                  Payload=json.dumps(new_event)
+                )
         except:
             print("Unexpected error:", sys.exc_info())
             str_msg = traceback.format_exc().splitlines()
