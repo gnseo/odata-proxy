@@ -99,6 +99,35 @@ def handler(event, context):
         url = query[URL]
 
     ret_result = handlers[method](event, context, query, url, method)
+    
+    if method == "GET":
+      # remove useless __metadata from body.d.results
+      my_d = tryit(lambda : json.loads(ret_result.get("body")).get("d"))
+      if my_d is not None:
+        def removeMetadata(item):
+          if "__metadata" in item:
+            item.pop("__metadata")
+          if "__deferred" in item:
+            item.pop("__deferred")
+            return None
+          
+          for key in list(item.keys()):
+            if isinstance(item[key], dict):
+              item[key] = removeMetadata(item[key])
+              if item[key] is None:
+                item.pop(key)
+            elif isinstance(item[key], list):
+              item[key] = list(map(removeMetadata, item[key]))
+          return item
+        my_d.update({
+              "results": list(map(removeMetadata, my_d.get("results")))
+        })
+        ret_result.update({
+          "body": json.dumps({
+            "d": my_d
+          })
+        })
+      
     if "connectionId" in event:
         return sendMessageToClient(event, ret_result)
     else:
