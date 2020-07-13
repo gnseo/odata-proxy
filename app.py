@@ -174,11 +174,14 @@ def handler(event, context):
             print(url)
             print(total_count)
             print(this_count)
-            print(loop_number)
 
             if loop_number >= 1:
               if total_count % this_count > 0:
                 loop_number = loop_number + 1
+              
+              print(loop_number)
+              if loop_number == 1:
+                raise Exception("No need to fetch more, since already fetched all entries")
 
               for index in range(loop_number):
                 acc_count = acc_count + increase_count
