@@ -5,6 +5,7 @@
   "description": "",
   "dataSource": "BSG_MATERIAL",
   "entitySet": "MATERIAL",
+  "fetchAll": true,
   "httpMethod": "GET",
   "headers": {
     "bsg-support-userID": "admin",
@@ -12,5 +13,5 @@
     "bsg-support-systemID": "s8gxs5masx",
     "authorization": "Basic YWRtaW46V2VsY29tZTEyMw=="
   },
-  "url": "https://my349266.sapbydesign.com/sap/byd/odata/cust/v1/bsg_material/MaterialCollection?$filter=InternalID eq '208553'&$format=json"
+  "url": "https://my349266.sapbydesign.com/sap/byd/odata/cust/v1/bsg_material/MaterialCollection?$top=500&$filter=LastChangeDateTime lt datetimeoffset'2020-07-02T00:00:00Z'&sap-language=ko&$inlinecount=allpages&$format=json"
 }
