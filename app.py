@@ -64,6 +64,7 @@ def handler(event, context):
         method = event["context"]["http-method"]
 
     version = event.get("version")
+    stage = event.get("stage")
 
     handlers = {
         "GET": handler_get,
@@ -142,11 +143,12 @@ def handler(event, context):
             partner_id = headers.get("bsg-support-partnerID")
             system_id = headers.get("bsg-support-systemID")
             results = json.loads(ret_result.get("body"))
+            results.update({"url": url})
             hash_object = hashlib.sha256()
             hash_object.update(json.dumps(results).encode("utf-8"))
             hash_key = hash_object.hexdigest()
             splitter = "/"
-            keyParts = ["db-data",partner_id, system_id, data_source, entity_set, hash_key]
+            keyParts = ["db-data", stage, partner_id, system_id, data_source, entity_set, hash_key]
             bucket.put_object(
               Key = splitter.join(list(filter(lambda x: x is not None, keyParts))),
               Body = json.dumps(results),
