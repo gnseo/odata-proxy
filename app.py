@@ -133,12 +133,13 @@ def handler(event, context):
         return sendMessageToClient(event, ret_result)
     else:
         try:
-            bucket = s3.Bucket("cert-lock-bsg.support")
             headers = query.get("headers", {})
             data_source = query.get("dataSource")
             entity_set = query.get("entitySet")
             if data_source is None:
               raise Exception("No data source passed on event")
+            
+            bucket = s3.Bucket("cert-lock-bsg.support")
             
             partner_id = headers.get("bsg-support-partnerID")
             system_id = headers.get("bsg-support-systemID")
