@@ -110,7 +110,7 @@ def handler(event, context):
             item.pop("__metadata")
           if "__deferred" in item:
             item.pop("__deferred")
-            return None
+            # return None
           
           for key in list(item.keys()):
             if isinstance(item[key], dict):
