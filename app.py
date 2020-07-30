@@ -109,7 +109,8 @@ def handler(event, context):
           if "__metadata" in item:
             item.pop("__metadata")
           if "__deferred" in item:
-            item.pop("__deferred")
+            item["__deferred"] = {}
+            # item.pop("__deferred")
             # return None
           
           for key in list(item.keys()):
