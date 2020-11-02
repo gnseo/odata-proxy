@@ -13,6 +13,8 @@ import uuid
 from urllib.parse import quote
 import traceback
 import hashlib
+from datetime import datetime
+from lib.s3Helper import get_object_from_s3, list_objects_from_s3, upload_object_to_s3, delete_object_from_s3, delete_objects_from_s3
 
 import boto3
 import botocore
@@ -565,14 +567,18 @@ def handler_post(event, context, query, url, httpMethod):
 def split_len(seq, length):
     return [seq[i:i + length] for i in range(0, len(seq), length)]
 
-
 def sendMessageToClient(event, ret_result):
     global version
 
     domainName = event["domainName"]
     stage = event["stage"]
-    connectionId = event["connectionId"]
-
+    action = event.get("action", None)
+    connectionId = event.get("connectionId")
+    
+    cache_hash = event.get("hash")
+    keys_list = ["ws-cache/{0}/{1}/{2}/seats/{3}/dummy".format(stage, action, cache_hash, connectionId)]
+    cIDs = [connectionId]
+    
     apiClient = boto3.client("apigatewaymanagementapi",
                              endpoint_url="https://{0}/{1}".format(domainName, stage))
     ret_result.update(
@@ -585,54 +591,86 @@ def sendMessageToClient(event, ret_result):
     if version is None:
         ret_result.update({"toDo": event.get("toDo", None)})
 
+    if cache_hash is not None:
+        updatedAt = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        upload_object_to_s3(
+            "cert-bsg.support",
+            "state.json",
+            json.dumps({"status": "completed", "response": ret_result, "updatedAt": updatedAt + "+00:00"}).encode(),
+            "ws-cache/{0}/{1}/{2}/".format(stage, action, cache_hash)
+        )
+    
     dataToSend = base64.b64encode(json.dumps(ret_result).encode())
     # print(sys.getsizeof(dataToSend))
     # print(len(dataToSend))
     dataSplitted = split_len(dataToSend, 1024 * 10)
     totalLine = len(dataSplitted)
-    for idx, d in enumerate(dataSplitted):
-        lineNumber = idx + 1
-        if totalLine == 1:
-            finalData = json.dumps({
-                "action": event.get("action", None),
-                "subAction": event.get("subAction", None),
-                "processID": event.get("processID", None),
-                "toDo": event.get("toDo", None),
-                "body": d.decode()
-            })
-            if version == "20190625":
+
+    while len(cIDs) > 0:
+        for idx, d in enumerate(dataSplitted):
+            lineNumber = idx + 1
+            if totalLine == 1:
                 finalData = json.dumps({
-                    "isBase64Encoded": True,
-                    "response": d.decode()
-                })
-        else:
-            finalData = json.dumps({
-                "action": event.get("action", None),
-                "subAction": event.get("subAction", None),
-                "processID": event.get("processID", None),
-                "toDo": event.get("toDo", None),
-                "splitted": {
-                    "total": totalLine,
-                    "seq": lineNumber,
+                    "action": event.get("action", None),
+                    "subAction": event.get("subAction", None),
+                    "processID": event.get("processID", None),
+                    "toDo": event.get("toDo", None),
                     "body": d.decode()
-                }
-            })
-            if version == "20190625":
+                })
+                if version == "20190625":
+                    finalData = json.dumps({
+                        "isBase64Encoded": True,
+                        "response": d.decode()
+                    })
+            else:
                 finalData = json.dumps({
+                    "action": event.get("action", None),
+                    "subAction": event.get("subAction", None),
+                    "processID": event.get("processID", None),
+                    "toDo": event.get("toDo", None),
                     "splitted": {
                         "total": totalLine,
                         "seq": lineNumber,
-                        "action": event.get("action", None),
-                        "subAction": event.get("subAction", None),
-                        "processID": event.get("processID", None),
-                        "isBase64Encoded": True,
-                        "response": d.decode()
+                        "body": d.decode()
                     }
                 })
+                if version == "20190625":
+                    finalData = json.dumps({
+                        "splitted": {
+                            "total": totalLine,
+                            "seq": lineNumber,
+                            "action": event.get("action", None),
+                            "subAction": event.get("subAction", None),
+                            "processID": event.get("processID", None),
+                            "isBase64Encoded": True,
+                            "response": d.decode()
+                        }
+                    })
 
-        try:
-            apiClient.post_to_connection(
-                ConnectionId=connectionId, Data=finalData)
-        except botocore.exceptions.ClientError:  # as clientError:
-            pass
-            # resBody = {"statusCode": clientError.response['Error']['Code']}
+            for cID in cIDs:
+                try:
+                    apiClient.post_to_connection(
+                        ConnectionId=cID, Data=finalData)
+                except botocore.exceptions.ClientError: # as clientError:
+                    pass
+                    # resBody = {"statusCode": clientError.response['Error']['Code']}
+
+        delete_objects_from_s3(
+            "cert-bsg.support",
+            list(map(lambda key : {"Key": key}, keys_list))
+        )
+        
+        cIDs = []
+        if cache_hash is not None:
+            keys_list = list_objects_from_s3(
+                "cert-bsg.support",
+                "ws-cache/{0}/{1}/{2}/seats/".format(stage, action, cache_hash)
+            )
+
+            for objectKey in keys_list:
+                print(objectKey)
+                cID = re.findall(r'\/seats\/[^/]{1,}\/dummy', objectKey)[0]
+                cID = re.sub(r'^\/seats\/', "", cID)
+                cID = re.sub(r'\/dummy$', "", cID)
+                cIDs.append(cID)
+    
